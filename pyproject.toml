@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "nl2dsl"
+version = "0.1.0"
+description = ""
+authors = ["PwR NL2DSL <pwr-nl2dsl@microsoft.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+python-dotenv = "^1.0.1"
+termcolor = "^2.4.0"
+pydantic = "^2.6.4"
+openai = "^1.33.0"
+tenacity = "^8.3.0"
+pyyaml = "^6.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

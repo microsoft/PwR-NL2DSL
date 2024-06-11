@@ -1,14 +1,56 @@
-# Project
+# PWR NL2DSL
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+Robust NL2DSL for workflows. This package converts natural language (NL) instructions into a fixed domain specific language (DSL).
 
-As the maintainer of this project, please make a few updates:
+## DSL
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+DSL describes an extended finite state machine with the following fields:
+
+1. `Display` shows a message to the user
+2. `Input` asks the user for an input
+3. `Operation` processes local variables and assigns the value to a variable.
+4. `Condition` for conditional branching
+5. `Plugin` to make a plugin call.
+
+## Examples
+
+1. A simple instruction:
+
+```bash
+python3 cli.py --instruction "Greet the user"
+```
+
+```json
+{
+    "fsm_name": "unnamed_fsm",
+    "config_vars": [],
+    "variables": [],
+    "dsl": [
+        {
+            "task_type": "print",
+            "name": "greet_user",
+            "message": "Welcome to the workflow! How can I help you today?",
+            "goto": null
+        }
+    ]
+}
+```
+
+2. A complex instruction that uses a plugin
+```bash
+python3 cli.py --instruction "" --plugin ""
+```
+
+```json
+```
+
+3. Edit on an existing DSL
+```bash
+python3 cli.py --instruction "" --plugin ""
+```
+
+```json
+```
 
 ## Contributing
 
