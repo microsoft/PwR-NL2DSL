@@ -1,16 +1,19 @@
+from collections import defaultdict
+import json
 class Checker:
     def __init__(
         self,
         dsl,
         variables,
+        config_variables=None
     ):
         self.errors = []
         self.dsl = dsl
         self.dsl_dict = {}
         self.defined_variables = {var['name'] for var in variables}
+        self.config_variables = config_variables
         for task in dsl:
             self.dsl_dict[task["name"]] = task
-
         self.variables_dict = {}
         for variable in variables:
             self.variables_dict[variable["name"]] = variable
@@ -55,7 +58,6 @@ class Checker:
         if "error_goto" in value:
             if value["error_goto"] == key:
                 self.errors.append(f"Upon error in {key} task it transitions to itself")
-
             if value["error_goto"] in self.dsl_dict:
                 error_task = self.dsl_dict[value["error_goto"]]
                 if error_task["task_type"] == "display":
@@ -67,7 +69,66 @@ class Checker:
                             #     f"{key} task error transition to {value['error_goto']} to itself"
                             # )
                             pass
+            if "transitions" in value:
+                for transition in value["transitions"]:
+                    if transition["goto"] == key:
+                        self.errors.append(
+                            f"{key} transitions to itself if error code {transition.get('code')} "
+                        )
+
+            if "conditions" in value:
+                for condition in value["conditions"]:
+                    if condition["goto"] == key:
+                        self.errors.append(
+                            f"{key} transitions to itself in condition {condition.get('condition')}"
+                        )       
     
+    def build_graph(self,):
+        graph = defaultdict(list)
+        for task in self.dsl:
+            if 'goto' in task:
+                graph[task['name']].append(task['goto'])
+            if 'error_goto' in task:
+                graph[task['name']].append(task['error_goto'])
+            if 'transitions' in task:
+                for transition in task['transitions']:
+                    graph[task['name']].append(transition['goto'])
+        return graph
+    
+    def dfs_check_variables(self, start:str=None):
+        graph = self.build_graph()
+        visited = set()
+        if self.config_variables:
+            config_var_names = [var["name"] for var in self.config_variables]
+        else:
+            config_var_names = []
+        written_variables = set(config_var_names)
+        if start is None:
+            start = self.dsl[0]['name']
+        stack = [start]
+
+        while stack:
+            task_name = stack.pop()
+            if task_name and task_name not in visited:
+                visited.add(task_name)
+                task = self.dsl_dict[task_name]
+                if task['task_type'] == 'input':
+                    written_variables.add(task['write_variable'])
+                if task['task_type'] == 'plugin':
+                    for var in task['plugin']['outputs'].values():
+                        written_variables.add(var)
+                    
+                    for var in task['plugin']['inputs'].values():
+                        if var not in written_variables:
+                            self.errors.append(f"Variable {var} used in task {task_name} not found in dsl.")
+                if task['task_type'] == 'operation':
+                    written_variables.add(task['write_variable'])
+                if 'read_variables' in task:
+                    for var in task['read_variables']:
+                        if var not in written_variables:
+                            self.errors.append(f"Variable {var} used in task {task_name} not found in dsl.")
+                stack.extend(graph[task_name])
+
     def undeclared_variables(self):
         for task in self.dsl:
             if task['task_type'] == 'print':
@@ -77,28 +138,28 @@ class Checker:
             if task['task_type'] == 'input':
                 write_var = task.get('write_variable')
                 if write_var not in self.defined_variables:
-                    self.errors.append(f"input {task} contains undeclared variable {write_var}")
+                    self.errors.append(f"input task: {task['name']} contains undeclared variable {write_var}")
             
             if task['task_type'] == 'plugin':
                 # Check read variables
                 read_vars = task.get('read_variables', [])
                 for i, var in enumerate(read_vars):
                     if var not in self.defined_variables:
-                        self.errors.append(f"plugin {task} contains undeclared variable {var} in input")
+                        self.errors.append(f"plugin task: {task['name']} contains undeclared variable {var} in input")
                 # Check write variables
                 write_vars = task.get('write_variables', [])
                 for i, var in enumerate(write_vars):
                     if var not in self.defined_variables:
-                        self.errors.append(f"plugin {task} contains undeclared variable in output")
+                        self.errors.append(f"plugin task: {task['name']} contains undeclared variable {var} in output")
             if task['task_type'] == 'operation':
                 write_var = task.get('write_variable')
                 if write_var not in self.defined_variables:
-                    self.errors.append(f"operation {task} contains undeclared variable")
+                    self.errors.append(f"operation task: {task['name']} contains undeclared variable")
             
             if task['task_type'] == 'condition':
                 for i, var in enumerate(task['read_variables']):
                     if var not in self.defined_variables:
-                        self.errors.append(f"condition {task} contains undeclared variable")
+                        self.errors.append(f"condition task: {task['name']} contains undeclared variable")
         
     def variable_checker(self):
         for key, value in self.variables_dict.items():
@@ -115,7 +176,7 @@ class Checker:
                     self.errors.append(f"{key} type is not valid")
             else:
                 self.errors.append(f"{key} type is missing")
-            
+        self.dfs_check_variables()
         self.undeclared_variables()
 
     def checker(
@@ -135,12 +196,10 @@ class Checker:
                     if isinstance(value["goto"], str):
                         if value["goto"] not in self.dsl_dict:
                             self.errors.append(
-                                f"{key} goto task {value['goto']} does not exist"
+                                f"{key} next transition task {value['goto']} does not exist"
                             )
                         else:
                             self.transition_loop_checker(key)
-                    # else:
-                    #     self.errors.append(f"{key} goto is not a string")
                 else:
                     self.errors.append(f"{key} goto is missing")
 
@@ -152,12 +211,10 @@ class Checker:
                             self.errors.append(
                                 f"{key} goto task {value['goto']} does not exist"
                             )
-                        else:
-                            self.transition_loop_checker(
-                                key,
-                            )
-                    # else:
-                    #     self.errors.append(f"{key} goto is not a string")
+                        # else:
+                        #     self.transition_loop_checker(
+                        #         key,
+                        #     )
                 else:
                     self.errors.append(f"{key} goto is missing")
 
@@ -167,11 +224,8 @@ class Checker:
                             self.errors.append(
                                 f"{key} error_goto task {value['error_goto']} does not exist"
                             )
-                        else:
-                            self.transition_loop_checker(key)
-                    # else:
-                    #     self.errors.append(f"{key} error_goto is not a string")
-
+                        # `else:
+                        #     self.transition_loop_checker(key)`
                     error_task = self.dsl_dict[value["error_goto"]]
                     if "goto" in error_task:
                         if error_task["goto"] == key:
@@ -190,26 +244,6 @@ class Checker:
                             if not isinstance(option, str):
                                 self.errors.append(f"{key} option is not a string")
 
-                if "write_variable" in value:
-                    if not isinstance(value["write_variable"], str):
-                        self.errors.append(f"{key} write_variable is not a string")
-
-                    if value["write_variable"] not in self.variables_dict:
-                        self.errors.append(
-                            f"{key} write_variable {value['write_variable']} does not exist in variables"
-                        )
-
-                    if (
-                        self.variables_dict[value["write_variable"]]["type"]
-                        != value["datatype"]
-                    ):
-                        self.errors.append(
-                            f"{key} write_variable {value['write_variable']} datatype does not match"
-                        )
-
-                    # how to identify if the validation on the variable is correct
-                else:
-                    self.errors.append(f"{key} write_variable is missing")
 
             if value["task_type"] == "plugin":
                 if "plugin" in value:
@@ -218,29 +252,6 @@ class Checker:
                     # how to check if the plugin exists
                     # how to check if the plugin has the correct input and output variables
 
-                    if "input_variables" in value:
-                        if not isinstance(value["input_variables"], dict):
-                            self.errors.append(f"{key} input_variables is not a dict")
-                        else:
-                            for plugin_var, task_var in value[
-                                "input_variables"
-                            ].items():
-                                if task_var not in self.variables_dict:
-                                    self.errors.append(
-                                        f"{key} input_variable plugin {task_var} does not exist in variables"
-                                    )
-
-                    if "output_variables" in value:
-                        if not isinstance(value["output_variables"], dict):
-                            self.errors.append(f"{key} output_variables is not a dict")
-                        else:
-                            for plugin_var, task_var in value[
-                                "output_variables"
-                            ].items():
-                                if task_var not in self.variables_dict:
-                                    self.errors.append(
-                                        f"{key} output_variable plugin {task_var} does not exist in variables"
-                                    )
                 else:
                     self.errors.append(f"{key} plugin is missing")
 
@@ -254,21 +265,19 @@ class Checker:
                     self.errors.append(f"{key} transitions is missing")
 
             if value["task_type"] == "condition":
-                if "read_variables" in value:
-                    if not isinstance(value["read_variables"], list):
-                        self.errors.append(f"{key} read_variables is not a list")
-                    else:
-                        for read_variable in value["read_variables"]:
-                            if read_variable not in self.variables_dict:
-                                self.errors.append(
-                                    f"{key} read_variable {read_variable} does not exist in variables"
-                                )
-                else:
-                    self.errors.append(f"{key} read_variables is missing")
-
                 if "transitions" in value:
                     self.transition_checker(key)
                 else:
                     self.errors.append(f"{key} transitions is missing")
 
         return self.errors
+
+
+if __name__ == "__main__":
+    with open("bandhu/step1/gold.json") as f:
+        data = json.load(f)
+    tasks = data["dsl"]
+    config_var_names = [var["name"] for var in data["config_variables"]]
+    checker = Checker(tasks, data["variables"], data["config_variables"])
+    result = checker.checker()
+    print(result)
