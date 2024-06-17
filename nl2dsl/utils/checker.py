@@ -5,13 +5,16 @@ class Checker:
         variables,
     ):
         self.errors = []
+        self.dsl = dsl
         self.dsl_dict = {}
+        self.defined_variables = {var['name'] for var in variables}
         for task in dsl:
             self.dsl_dict[task["name"]] = task
 
         self.variables_dict = {}
         for variable in variables:
             self.variables_dict[variable["name"]] = variable
+
 
     def transition_checker(self, key):
         value = self.dsl_dict[key]
@@ -64,7 +67,38 @@ class Checker:
                             self.errors.append(
                                 f"{key} error_goto --> {value['error_goto']} to itself"
                             )
-
+    def undeclared_variables(self):
+        for task in self.dsl:
+            if task['task_type'] == 'print':
+                # No variable validation required for print tasks
+                continue
+            
+            if task['task_type'] == 'input':
+                write_var = task.get('write_variable')
+                if write_var not in self.defined_variables:
+                    self.errors.append(f"input {task} contains undeclared variable {write_var}")
+            
+            if task['task_type'] == 'plugin':
+                # Check read variables
+                read_vars = task.get('read_variables', [])
+                for i, var in enumerate(read_vars):
+                    if var not in self.defined_variables:
+                        self.errors.append(f"plugin {task} contains undeclared variable {var} in input")
+                # Check write variables
+                write_vars = task.get('write_variables', [])
+                for i, var in enumerate(write_vars):
+                    if var not in self.defined_variables:
+                        self.errors.append(f"plugin {task} contains undeclared variable in output")
+            if task['task_type'] == 'operation':
+                write_var = task.get('write_variable')
+                if write_var not in self.defined_variables:
+                    self.errors.append(f"operation {task} contains undeclared variable")
+            
+            if task['task_type'] == 'condition':
+                for i, var in enumerate(task['read_variables']):
+                    if var not in self.defined_variables:
+                        self.errors.append(f"condition {task} contains undeclared variable")
+        
     def variable_checker(self):
         for key, value in self.variables_dict.items():
             if "type" in value:
@@ -80,13 +114,14 @@ class Checker:
                     self.errors.append(f"{key} type is not valid")
             else:
                 self.errors.append(f"{key} type is missing")
-
-        return self.errors
+            
+        self.undeclared_variables()
 
     def checker(
         self,
     ):
         self.variable_checker()
+
         for key, value in self.dsl_dict.items():
             if value["task_type"] == "print":
                 if "message" in value:
