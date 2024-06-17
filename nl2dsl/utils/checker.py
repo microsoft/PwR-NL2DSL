@@ -15,7 +15,6 @@ class Checker:
         for variable in variables:
             self.variables_dict[variable["name"]] = variable
 
-
     def transition_checker(self, key):
         value = self.dsl_dict[key]
         if not isinstance(value["transitions"], list):
@@ -41,21 +40,21 @@ class Checker:
                     if "goto" in transition:
                         if transition["goto"] not in self.dsl_dict:
                             self.errors.append(
-                                f"{key} transition goto task {transition['goto']} does not exist"
+                                f"{key} next transition task {transition['goto']} does not exist"
                             )
                     else:
-                        self.errors.append(f"{key} transition goto is missing")
+                        self.errors.append(f"{key} transition is missing")
         return self.errors
 
     def transition_loop_checker(self, key):
         value = self.dsl_dict[key]
         if "goto" in value:
             if value["goto"] == key:
-                self.errors.append(f"{key} goto --> itself")
+                self.errors.append(f"{key} transitions to itself")
 
         if "error_goto" in value:
             if value["error_goto"] == key:
-                self.errors.append(f"{key} error_goto --> itself")
+                self.errors.append(f"Upon error in {key} task it transitions to itself")
 
             if value["error_goto"] in self.dsl_dict:
                 error_task = self.dsl_dict[value["error_goto"]]
@@ -64,9 +63,11 @@ class Checker:
                     # can we make sure that other task type will not have loop??
                     if "goto" in error_task:
                         if error_task["goto"] == key:
-                            self.errors.append(
-                                f"{key} error_goto --> {value['error_goto']} to itself"
-                            )
+                            # self.errors.append(
+                            #     f"{key} task error transition to {value['error_goto']} to itself"
+                            # )
+                            pass
+    
     def undeclared_variables(self):
         for task in self.dsl:
             if task['task_type'] == 'print':
