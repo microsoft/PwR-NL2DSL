@@ -22,7 +22,7 @@ python3 cli.py --instruction "Greet the user"
 
 ```json
 {
-    "fsm_name": "unnamed_fsm",
+    "fsm_name": "welcome_bot",
     "config_vars": [],
     "variables": [],
     "dsl": [
