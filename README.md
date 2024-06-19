@@ -185,7 +185,7 @@ python3 cli.py --instruction "Tell the user we are going to help them book an ap
 
 3. Edit on an existing DSL. (We store the above dsl as `sample.json`)
 ```bash
-python3 cli.py -i "On success, tell the user that their appointment is booked and they will receive an SMS on their mobile number" -d sample.json --debug
+python3 cli.py -i "On success, tell the user that their appointment is booked and they will receive an SMS on their mobile number" -d tests/sample.json --debug
 ```
 
 ```json
@@ -260,7 +260,7 @@ python3 cli.py -i "On success, tell the user that their appointment is booked an
 
 ## Developer
 
-Setup [poetry](https://python-poetry.org/docs/#installation) shell and `.env` file
+Setup [poetry](https://python-poetry.org/docs/#installation) shell and `.env` file (copy from [env.template](env.template))
 
 ```bash
 poetry shell
