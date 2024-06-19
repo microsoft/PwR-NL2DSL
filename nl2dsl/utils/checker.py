@@ -13,12 +13,15 @@ class Checker:
         for variable in variables:
             self.variables_dict[variable["name"]] = variable
 
-    def transition_checker(self, key):
+    def transition_checker(self, key, condition_key=None):
+        if condition_key is None:
+            condition_key = "transitions"
+
         value = self.dsl_dict[key]
-        if not isinstance(value["transitions"], list):
+        if not isinstance(value[condition_key], list):
             self.errors.append(f"{key} transitions is not a list")
         else:
-            for transition in value["transitions"]:
+            for transition in value[condition_key]:
                 if not isinstance(transition, dict):
                     self.errors.append(f"{key} transition is not a dict")
                 else:
@@ -36,34 +39,13 @@ class Checker:
                         self.errors.append(f"{key} transition condition is missing")
 
                     if "goto" in transition:
-                        if transition["goto"] not in self.dsl_dict:
+                        if transition["goto"] is not None and transition["goto"] not in self.dsl_dict:
                             self.errors.append(
                                 f"{key} transition goto task {transition['goto']} does not exist"
                             )
                     else:
                         self.errors.append(f"{key} transition goto is missing")
         return self.errors
-
-    def transition_loop_checker(self, key):
-        value = self.dsl_dict[key]
-        if "goto" in value:
-            if value["goto"] == key:
-                self.errors.append(f"{key} goto --> itself")
-
-        if "error_goto" in value:
-            if value["error_goto"] == key:
-                self.errors.append(f"{key} error_goto --> itself")
-
-            if value["error_goto"] in self.dsl_dict:
-                error_task = self.dsl_dict[value["error_goto"]]
-                if error_task["task_type"] == "display":
-                    # if task_type is logic, then check for goto and error_goto
-                    # can we make sure that other task type will not have loop??
-                    if "goto" in error_task:
-                        if error_task["goto"] == key:
-                            self.errors.append(
-                                f"{key} error_goto --> {value['error_goto']} to itself"
-                            )
 
     def variable_checker(self):
         for key, value in self.variables_dict.items():
@@ -101,15 +83,12 @@ class Checker:
                             self.errors.append(
                                 f"{key} goto task {value['goto']} does not exist"
                             )
-                        else:
-                            self.transition_loop_checker(key)
-                    # else:
-                    #     self.errors.append(f"{key} goto is not a string")
                 else:
                     self.errors.append(f"{key} goto is missing")
 
             if value["task_type"] == "input":
 
+                has_transition = False
                 if "goto" in value:
                     if isinstance(value["goto"], str):
                         if value["goto"] not in self.dsl_dict:
@@ -117,13 +96,7 @@ class Checker:
                                 f"{key} goto task {value['goto']} does not exist"
                             )
                         else:
-                            self.transition_loop_checker(
-                                key,
-                            )
-                    # else:
-                    #     self.errors.append(f"{key} goto is not a string")
-                else:
-                    self.errors.append(f"{key} goto is missing")
+                            has_transition = True
 
                 if "error_goto" in value:
                     if isinstance(value["error_goto"], str):
@@ -132,18 +105,9 @@ class Checker:
                                 f"{key} error_goto task {value['error_goto']} does not exist"
                             )
                         else:
-                            self.transition_loop_checker(key)
-                    # else:
-                    #     self.errors.append(f"{key} error_goto is not a string")
+                            has_transition = True
 
-                    error_task = self.dsl_dict[value["error_goto"]]
-                    if "goto" in error_task:
-                        if error_task["goto"] == key:
-                            self.errors.append(
-                                f"{key} error_goto is pointing to itself"
-                            )
-
-                else:
+                if not has_transition:
                     self.errors.append(f"{key} error_goto is missing")
 
                 if "options" in value:
@@ -230,8 +194,8 @@ class Checker:
                 else:
                     self.errors.append(f"{key} read_variables is missing")
 
-                if "transitions" in value:
-                    self.transition_checker(key)
+                if "conditions" in value:
+                    self.transition_checker(key, "conditions")
                 else:
                     self.errors.append(f"{key} transitions is missing")
 
