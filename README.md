@@ -2,7 +2,7 @@
 
 # PWR NL2DSL
 
-Robust NL2DSL for workflows. This package converts natural language (NL) instructions into a fixed domain specific language (DSL).
+Robust NL2DSL for workflows. This package converts natural language (NL) instructions into a fixed domain specific language (DSL). This is a core library for [PwR Studio](https://github.com/microsoft/PwR-Studio)
 
 ## DSL
 
