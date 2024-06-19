@@ -1,3 +1,5 @@
+[![Test Cases](https://github.com/microsoft/PwR-NL2DSL/actions/workflows/python-test.yml/badge.svg)](https://github.com/microsoft/PwR-NL2DSL/actions/workflows/python-test.yml)
+
 # PWR NL2DSL
 
 Robust NL2DSL for workflows. This package converts natural language (NL) instructions into a fixed domain specific language (DSL).
