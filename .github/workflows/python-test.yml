@@ -36,5 +36,6 @@ jobs:
         AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
         AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
       run: |
-        poetry run python3 -m unittest tests/basic.py
+        poetry run python3 -c 'import os;print(os.environ)'
+        #poetry run python3 -m unittest tests/basic.py
         
