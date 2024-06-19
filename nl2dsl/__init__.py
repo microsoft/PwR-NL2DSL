@@ -157,7 +157,7 @@ class NL2DSL:
 
             elif task_type == "plugin":
                 # TODO: check and handle all the error codes from the plugin
-                for j, transition in enumerate(task.get("transtions", [])):
+                for j, transition in enumerate(task.get("transitions", [])):
                     if transition.get("goto") not in task_names:
                         flow[i]["transitions"][j]["goto"] = None
         return flow
