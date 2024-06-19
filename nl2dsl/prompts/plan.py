@@ -25,7 +25,8 @@ Please respond with a json containing ALL the sub-steps as a value in the "subst
 - **plugin_id**: The id of the plugin that the sub-step uses, if any. Each step can only use one plugin.
 - **options**: This will only be present in input tasks. It specifies the options that the user can input. The structure will be a list of strings.
 - **goto**: Where to go after this task. The structure will be dependent on the task type. 
-    - For print, input and operation tasks, this will be the id of the next task.
+    - For print, input, start and operation tasks, this will be the id of the next task.
+    - For end tasks, this will be null.
     - For condition tasks, this will be a list of dictionaries, each with the following:
         - **condition**: The condition that must be met to go to the target task.
         - **goto**: The id of the task to go to if the condition is met.
