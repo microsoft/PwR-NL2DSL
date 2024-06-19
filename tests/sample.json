@@ -1,0 +1,124 @@
+{
+    "fsm_name": "unnamed_fsm",
+    "config_vars": [
+        {
+            "name": "CLIENT_ID",
+            "type": "string",
+            "description": "API secret key for the payment gateway",
+            "plugins": [
+                "payment"
+            ]
+        },
+        {
+            "name": "CLIENT_SECRET",
+            "type": "string",
+            "description": "API secret key for the payment gateway",
+            "plugins": [
+                "payment"
+            ]
+        }
+    ],
+    "variables": [
+        {
+            "name": "mobile_number",
+            "type": "str",
+            "validation": "re.match(r'^\\d{10}$', mobile_number) is not None",
+            "description": "mobile_number should be a 10 digit number"
+        },
+        {
+            "name": "name",
+            "type": "str",
+            "validation": "len(name) > 0 and all(x.isalnum() or x.isspace() for x in name)",
+            "description": "name should be a non-empty string containing only alphanumeric characters and spaces"
+        },
+        {
+            "name": "TXN_ID",
+            "type": "str",
+            "validation": "len(TXN_ID) > 0",
+            "description": "TXN_ID should be a non-empty string"
+        }
+    ],
+    "dsl": [
+        {
+            "task_type": "print",
+            "name": "inform_booking_appointment",
+            "message": "We are going to help you book an appointment.",
+            "goto": "collect_mobile_task"
+        },
+        {
+            "task_type": "input",
+            "name": "collect_mobile_task",
+            "message": "Please enter your mobile number:",
+            "write_variable": "mobile_number",
+            "datatype": "str",
+            "goto": "collect_name_task",
+            "error_goto": "collect_mobile_task"
+        },
+        {
+            "task_type": "input",
+            "name": "collect_name_task",
+            "message": "Please enter your name:",
+            "write_variable": "name",
+            "datatype": "str",
+            "goto": "payment_task",
+            "error_goto": "collect_name_task"
+        },
+        {
+            "task_type": "plugin",
+            "name": "payment_task",
+            "read_variables": [
+                "mobile_number",
+                "name"
+            ],
+            "environment_variables": [
+                "CLIENT_ID",
+                "CLIENT_SECRET"
+            ],
+            "write_variables": [
+                "TXN_ID"
+            ],
+            "plugin": {
+                "name": "payment",
+                "inputs": {
+                    "mobile_number": "mobile_number",
+                    "name": "name",
+                    "CLIENT_ID": "CLIENT_ID",
+                    "CLIENT_SECRET": "CLIENT_SECRET",
+                    "AMOUNT": 600,
+                    "REASON": "Appointment Booking Charge"
+                },
+                "outputs": {
+                    "TXN_ID": "TXN_ID"
+                }
+            },
+            "description": "Collecting a payment of Rs 600 from the user for booking appointment.",
+            "transitions": [
+                {
+                    "code": "SUCCESS",
+                    "goto": "payment_success_print_task",
+                    "description": "The payment was successfully collected."
+                },
+                {
+                    "code": "CANCELLED_BY_USER",
+                    "goto": "payment_cancelled_print_task",
+                    "description": "The payment was cancelled by the user."
+                },
+                {
+                    "code": "EXPIRED",
+                    "goto": "payment_expired_print_task",
+                    "description": "The payment link has expired."
+                },
+                {
+                    "code": "SERVER_DOWNTIME",
+                    "goto": "payment_server_downtime_print_task",
+                    "description": "The server is currently down."
+                },
+                {
+                    "code": "SERVER_ERROR",
+                    "goto": "payment_server_error_print_task",
+                    "description": "There was an error on the server."
+                }
+            ]
+        }
+    ]
+}

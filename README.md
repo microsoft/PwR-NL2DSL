@@ -38,7 +38,7 @@ python3 cli.py --instruction "Greet the user"
 
 2. A complex instruction that uses a plugin
 ```bash
-cat plugins.yaml | head -n 10
+cat tests/plugins.yaml | head -n 10
 payment: |
     The name of the plugin is payment. This plugin helps in collecting a payment from the user by generating a payment link.
 
@@ -51,7 +51,7 @@ payment: |
         - REASON (type:str) : The reason for the payment
 
 
-python3 cli.py --instruction "Tell the user we are going to help them book an appointment. For this we need to collect Rs 600. Collect the users mobile number and name. Then collect the amount using the payment plugin" --plugin plugins.yaml
+python3 cli.py --instruction "Tell the user we are going to help them book an appointment. For this we need to collect Rs 600. Collect the users mobile number and name. Then collect the amount using the payment plugin" --plugin tests/plugins.yaml
 ```
 
 ```json
