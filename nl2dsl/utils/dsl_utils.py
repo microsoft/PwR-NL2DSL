@@ -37,7 +37,7 @@ def update_flow(step, plugins={}, flow=[], debug=False):
     step_type = step["type"]
     if step_type == "add" or step_type == "edit":
         try:
-            dsl_list = json.loads(flow)
+            dsl_list: list = json.loads(flow)
 
             sys_prompt = atomic_system_prompt.format(
                 dsl=flow, plugins=plugins, task_types_info=task_types_info
@@ -48,7 +48,7 @@ def update_flow(step, plugins={}, flow=[], debug=False):
             if debug:
                 cprint(json.dumps(llm_response, indent=4), "light_yellow")
             if step_type == "add":
-                dsl_list.append(llm_response)
+                dsl_list.insert(-1, llm_response)
             elif step_type == "edit":
                 edited_task = llm_response
                 edited = False
@@ -58,7 +58,7 @@ def update_flow(step, plugins={}, flow=[], debug=False):
                         edited = True
                         break
                 if not edited:
-                    dsl_list.append(edited_task)
+                    dsl_list.insert(-1, edited_task)
         except TypeError as e:
             cprint(f"TypeError: {e}")
             cprint(
@@ -70,17 +70,21 @@ def update_flow(step, plugins={}, flow=[], debug=False):
         dsl_list = json.loads(flow)
         delete_task_plan = step
         deleted = False
-        for i, task in enumerate(dsl_list):
-            if task["name"] == delete_task_plan["task_id"]:
-                dsl_list.pop(i)
-                deleted = True
-                break
-        if not deleted:
-            cprint(
-                f"Task with id {delete_task_plan['task_id']} does not exist in the flow.",
-                "red",
-            )
+        if delete_task_plan["task_id"] == "start" or delete_task_plan["task_id"] == "end":
+            cprint(f"Cannot delete start or end task.", "red")
             dsl_list = json.loads(flow)
+        else:
+            for i, task in enumerate(dsl_list):
+                if task["name"] == delete_task_plan["task_id"]:
+                    dsl_list.pop(i)
+                    deleted = True
+                    break
+            if not deleted:
+                cprint(
+                    f"Task with id {delete_task_plan['task_id']} does not exist in the flow.",
+                    "red",
+                )
+                dsl_list = json.loads(flow)
 
     if debug:
         cprint(f"Intermediate DSL: {json.dumps(dsl_list, indent=4)}", "light_red")

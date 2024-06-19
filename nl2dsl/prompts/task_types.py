@@ -1,5 +1,6 @@
 TASK_TYPES_INFO = """# Description of the DSL:
-Our DSL is a programming language for implementing workflows. A program consists of a list of Tasks. Each Task carries out a unit of work and then transitions to another Task or terminates the program, similar to a State machine. The first task in the list of Tasks is the entry-point of the program.
+Our DSL is a programming language for implementing workflows. A program consists of a list of Tasks. 
+The `start` Task the entry-point of the program. The flow ends when the `end` Task has been reached. All other Tasks carry out a unit of work and then transition to another Task similar to a State machine.
 
 All variables are global, unless otherwise specified. However, a task can only use a variable that has been declared. Variables can have any of python's built in data types (string, list, dictionary, etc.). 
 The exception to this are read only environment or config variables, which are provided by the system and can be used by the plugins.
@@ -12,7 +13,7 @@ The DSL supports the following actions:
 - Conditional Branching based on the result of python expressions. 
 
 ## Tasks:
-A Task can be one of six kinds: Print, Input, Operation, Condition, Plugin. Their description is as follows.
+A Task can be one of eight kinds: Print, Input, Operation, Condition, Plugin, Start and Stop. Their description is as follows.
 
 ### Print Task
 It is used to print a message or variable to the user and then simply go to the next Task. Any variables used in the message should be put in curly braces, in python's f-string style. It has the following fields:
@@ -185,7 +186,42 @@ The response code is a string and must be one of the response codes from the plu
             ],
         }},
 
+        
+
+### Start Task
+This task is the entry point of the program. It has the following fields:
+- *task_type*: The type of the task. It should be "start".
+- *name*: The name of the task. It should be "start".
+- *goto*: The name of the next task to transition to.
+
+**Usage:** This task is used to start the program. It is the first task that is executed when the program is run. It cannot be defined more than once in a program. It cannot be deleted, but its transitions can be modified.
+
+**Example**:
+{{
+    "task_type": "start",
+    "name": "start",
+    "goto": "next_task"
+}}
+
+### End Task
+This task is the exit point of the program. It has the following fields:
+- *task_type*: The type of the task. It should be "end".
+- *name*: The name of the task. It should be "end".
+- *goto*: The name of the next task to transition to. This field should be null.
+
+**Usage:** This task is used to end the program. It is the last task that is executed when the program is run. It cannot be defined more than once in a program. It cannot be deleted, but its transitions can be modified.
+
+**Example**:
+{{
+    "task_type": "end",
+    "name": "end",
+    "goto": null
+}}
+
+
 ## NOTE:
 1. Think of a task as a state in a finite state machine. A task will do some work and then transition to the next task, often based on some condition.
 2. It is important to think of a task as an atomic unit of work. A task should be simple and should do only one thing. If you find a task doing multiple things, consider breaking it down into multiple tasks.
+3. A DSL will always have a `start` task and an `end` task. The flow of the program starts at the `start` task and ends at the `end` task.
+
 """

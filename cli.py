@@ -67,7 +67,18 @@ if __name__ == "__main__":
         dsl = {
             "variables": [],
             "config_vars": [],
-            "dsl": [],
+            "dsl": [
+                {
+                    "task_type": "start",
+                    "name": "start",
+                    "goto": "end",
+                },
+                {
+                    "task_type": "end",
+                    "name": "end",
+                    "goto": None,
+                },
+            ],
             "fsm_name": "unnamed_fsm",
         }
 
