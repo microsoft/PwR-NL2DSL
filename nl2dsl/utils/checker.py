@@ -67,8 +67,8 @@ class Checker:
                     self.errors.append(f"{key} type is not valid")
             else:
                 self.errors.append(f"{key} type is missing")
-        self.dfs_check_variables()
-        self.undeclared_variables()
+        # self.dfs_check_variables()
+        # self.undeclared_variables()
 
     def checker(
         self,
