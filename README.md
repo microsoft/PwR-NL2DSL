@@ -38,18 +38,231 @@ python3 cli.py --instruction "Greet the user"
 
 2. A complex instruction that uses a plugin
 ```bash
-python3 cli.py --instruction "" --plugin ""
+cat plugins.yaml | head -n 10
+payment: |
+    The name of the plugin is payment. This plugin helps in collecting a payment from the user by generating a payment link.
+
+    The inputs needed are:
+        - mobile_number (type:str) : The mobile number of the user
+        - name (type:str) : Name of the user
+        - CLIENT_ID (type:str) : API secret key for the payment gateway
+        - CLIENT_SECRET (type:str) : API secret key for the payment gateway
+        - AMOUNT (type:int) : The amount to be collected from the user
+        - REASON (type:str) : The reason for the payment
+
+
+python3 cli.py --instruction "Tell the user we are going to help them book an appointment. For this we need to collect Rs 600. Collect the users mobile number and name. Then collect the amount using the payment plugin" --plugin plugins.yaml
 ```
 
 ```json
+{
+    "fsm_name": "unnamed_fsm",
+    "config_vars": [
+        {
+            "name": "CLIENT_ID",
+            "type": "string",
+            "description": "API secret key for the payment gateway",
+            "plugins": [
+                "payment"
+            ]
+        },
+        {
+            "name": "CLIENT_SECRET",
+            "type": "string",
+            "description": "API secret key for the payment gateway",
+            "plugins": [
+                "payment"
+            ]
+        }
+    ],
+    "variables": [
+        {
+            "name": "mobile_number",
+            "type": "str",
+            "validation": "re.match(r'^\\d{10}$', mobile_number) is not None",
+            "description": "mobile_number should be a 10 digit number"
+        },
+        {
+            "name": "name",
+            "type": "str",
+            "validation": "len(name) > 0 and all(x.isalnum() or x.isspace() for x in name)",
+            "description": "name should be a non-empty string containing only alphanumeric characters and spaces"
+        },
+        {
+            "name": "TXN_ID",
+            "type": "str",
+            "validation": "len(TXN_ID) > 0",
+            "description": "TXN_ID should be a non-empty string"
+        }
+    ],
+    "dsl": [
+        {
+            "task_type": "print",
+            "name": "inform_booking_appointment",
+            "message": "We are going to help you book an appointment.",
+            "goto": "collect_mobile_task"
+        },
+        {
+            "task_type": "input",
+            "name": "collect_mobile_task",
+            "message": "Please enter your mobile number:",
+            "write_variable": "mobile_number",
+            "datatype": "str",
+            "goto": "collect_name_task",
+            "error_goto": "collect_mobile_task"
+        },
+        {
+            "task_type": "input",
+            "name": "collect_name_task",
+            "message": "Please enter your name:",
+            "write_variable": "name",
+            "datatype": "str",
+            "goto": "payment_task",
+            "error_goto": "collect_name_task"
+        },
+        {
+            "task_type": "plugin",
+            "name": "payment_task",
+            "read_variables": [
+                "mobile_number",
+                "name"
+            ],
+            "environment_variables": [
+                "CLIENT_ID",
+                "CLIENT_SECRET"
+            ],
+            "write_variables": [
+                "TXN_ID"
+            ],
+            "plugin": {
+                "name": "payment",
+                "inputs": {
+                    "mobile_number": "mobile_number",
+                    "name": "name",
+                    "CLIENT_ID": "CLIENT_ID",
+                    "CLIENT_SECRET": "CLIENT_SECRET",
+                    "AMOUNT": 600,
+                    "REASON": "Appointment Booking Charge"
+                },
+                "outputs": {
+                    "TXN_ID": "TXN_ID"
+                }
+            },
+            "description": "Collecting a payment of Rs 600 from the user for booking appointment.",
+            "transitions": [
+                {
+                    "code": "SUCCESS",
+                    "goto": "payment_success_print_task",
+                    "description": "The payment was successfully collected."
+                },
+                {
+                    "code": "CANCELLED_BY_USER",
+                    "goto": "payment_cancelled_print_task",
+                    "description": "The payment was cancelled by the user."
+                },
+                {
+                    "code": "EXPIRED",
+                    "goto": "payment_expired_print_task",
+                    "description": "The payment link has expired."
+                },
+                {
+                    "code": "SERVER_DOWNTIME",
+                    "goto": "payment_server_downtime_print_task",
+                    "description": "The server is currently down."
+                },
+                {
+                    "code": "SERVER_ERROR",
+                    "goto": "payment_server_error_print_task",
+                    "description": "There was an error on the server."
+                }
+            ]
+        }
+    ]
+}
 ```
 
-3. Edit on an existing DSL
+3. Edit on an existing DSL. (We store the above dsl as `sample.json`)
 ```bash
-python3 cli.py --instruction "" --plugin ""
+python3 cli.py -i "On success, tell the user that their appointment is booked and they will receive an SMS on their mobile number" -d sample.json --debug
 ```
 
 ```json
+{
+    ...
+        {
+            "task_type": "plugin",
+            "name": "payment_task",
+            "read_variables": [
+                "mobile_number",
+                "name"
+            ],
+            "environment_variables": [
+                "CLIENT_ID",
+                "CLIENT_SECRET"
+            ],
+            "write_variables": [
+                "TXN_ID"
+            ],
+            "plugin": {
+                "name": "payment",
+                "inputs": {
+                    "mobile_number": "mobile_number",
+                    "name": "name",
+                    "CLIENT_ID": "CLIENT_ID",
+                    "CLIENT_SECRET": "CLIENT_SECRET",
+                    "AMOUNT": 600,
+                    "REASON": "Appointment Booking Charge"
+                },
+                "outputs": {
+                    "TXN_ID": "TXN_ID"
+                }
+            },
+            "description": "Collecting a payment of Rs 600 from the user for booking an appointment.",
+            "transitions": [
+                {
+                    "code": "SUCCESS",
+                    "goto": "appointment_success_print_task",
+                    "description": "The payment was successfully collected."
+                },
+                {
+                    "code": "CANCELLED_BY_USER",
+                    "goto": "payment_cancelled_print_task",
+                    "description": "The payment was cancelled by the user."
+                },
+                {
+                    "code": "EXPIRED",
+                    "goto": "payment_expired_print_task",
+                    "description": "The payment link has expired."
+                },
+                {
+                    "code": "SERVER_DOWNTIME",
+                    "goto": "payment_server_downtime_print_task",
+                    "description": "The server is currently down."
+                },
+                {
+                    "code": "SERVER_ERROR",
+                    "goto": "payment_server_error_print_task",
+                    "description": "There was an error on the server."
+                }
+            ]
+        },
+        {
+            "task_type": "print",
+            "name": "appointment_success_print_task",
+            "message": "Your appointment is booked. You will receive an SMS on your mobile number shortly.",
+            "goto": null
+        }
+    ]
+}
+```
+
+## Developer
+
+Setup [poetry](https://python-poetry.org/docs/#installation) shell and `.env` file
+
+```bash
+poetry shell
+poetry install
 ```
 
 ## Contributing
