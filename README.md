@@ -1,6 +1,8 @@
+[![Test Cases](https://github.com/microsoft/PwR-NL2DSL/actions/workflows/python-test.yml/badge.svg)](https://github.com/microsoft/PwR-NL2DSL/actions/workflows/python-test.yml)
+
 # PWR NL2DSL
 
-Robust NL2DSL for workflows. This package converts natural language (NL) instructions into a fixed domain specific language (DSL).
+Robust NL2DSL for workflows. This package converts natural language (NL) instructions into a fixed domain specific language (DSL). This is a core library for [PwR Studio](https://github.com/microsoft/PwR-Studio)
 
 ## DSL
 
@@ -38,7 +40,7 @@ python3 cli.py --instruction "Greet the user"
 
 2. A complex instruction that uses a plugin
 ```bash
-cat plugins.yaml | head -n 10
+cat tests/plugins.yaml | head -n 10
 payment: |
     The name of the plugin is payment. This plugin helps in collecting a payment from the user by generating a payment link.
 
@@ -51,7 +53,7 @@ payment: |
         - REASON (type:str) : The reason for the payment
 
 
-python3 cli.py --instruction "Tell the user we are going to help them book an appointment. For this we need to collect Rs 600. Collect the users mobile number and name. Then collect the amount using the payment plugin" --plugin plugins.yaml
+python3 cli.py --instruction "Tell the user we are going to help them book an appointment. For this we need to collect Rs 600. Collect the users mobile number and name. Then collect the amount using the payment plugin" --plugin tests/plugins.yaml
 ```
 
 ```json
@@ -183,7 +185,7 @@ python3 cli.py --instruction "Tell the user we are going to help them book an ap
 
 3. Edit on an existing DSL. (We store the above dsl as `sample.json`)
 ```bash
-python3 cli.py -i "On success, tell the user that their appointment is booked and they will receive an SMS on their mobile number" -d sample.json --debug
+python3 cli.py -i "On success, tell the user that their appointment is booked and they will receive an SMS on their mobile number" -d tests/sample.json --debug
 ```
 
 ```json
@@ -258,7 +260,7 @@ python3 cli.py -i "On success, tell the user that their appointment is booked an
 
 ## Developer
 
-Setup [poetry](https://python-poetry.org/docs/#installation) shell and `.env` file
+Setup [poetry](https://python-poetry.org/docs/#installation) shell and `.env` file (copy from [env.template](env.template))
 
 ```bash
 poetry shell
