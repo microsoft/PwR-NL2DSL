@@ -19,37 +19,101 @@ class Checker:
             self.variables_dict[variable["name"]] = variable
 
     def transition_checker(self, state_name, condition_key=None):
-        if condition_key is None:
-            condition_key = "transitions"
-
         state = self.dsl_dict[state_name]
-        if not isinstance(state["transitions"], list):
-            self.errors["errors"].append(f"{state_name} transitions is not a list")
-        else:
-            for transition in state[condition_key]:
-                if not isinstance(transition, dict):
-                    self.errors["errors"].append(f"{state_name} transition is not a dict")
-                else:
-
-                    if "condition" in transition:
-                        if not isinstance(transition["condition"], str):
-                            # how to check if the condition is valid python expression
-                            self.errors["errors"].append(
-                                f"{state_name} transition condition is not a string"
-                            )
-                    elif "code" in transition:
-                        if not isinstance(transition["code"], str):
-                            self.errors["errors"].append(f"{state_name} transition code is not a string")
+        if state["task_type"] == "condition":
+            if "else_goto" not in state:
+                self.errors["errors"].append(f"{state_name} else_goto is missing")
+            else:
+                if state["else_goto"] == None:
+                    self.errors["warnings"].append(f"{state_name} else_goto is set None")
+                if state["else_goto"] not in self.dsl_dict:
+                    self.errors["errors"].append(
+                        f"{state_name} else_goto task {state['else_goto']} does not exist"
+                    )
+            if "conditions" not in state:
+                self.errors["errors"].append(f"{state_name} conditions is missing")
+            else:
+                for condition in state["conditions"]:
+                    if not isinstance(condition, dict):
+                        self.errors["errors"].append(f"{state_name} condition is not a dict")
                     else:
-                        self.errors.append(f"{state_name} transition condition is missing")
-
-                    if "goto" in transition:
-                        if transition["goto"] not in self.dsl_dict:
-                            self.errors["errors"].append(
-                                f"{state_name} next transition task {transition['goto']} does not exist"
-                            )
+                        if "condition" not in condition:
+                            self.errors["errors"].append(f"{state_name} condition is missing")
+                        
+                        if "goto" not in condition:
+                            self.errors["errors"].append(f"{state_name} goto is missing")
+                        else:
+                            if condition["goto"] == None:
+                                self.errors["warnings"].append(f"{state_name} goto is set None")
+                            
+                            if condition["goto"] not in self.dsl_dict:
+                                self.errors["errors"].append(
+                                    f"{state_name} next transition task {condition['goto']} does not exist"
+                                )
+        if state["task_type"] == "plugin":
+            if "transitions" not in state:
+                self.errors["errors"].append(f"{state_name} transitions is missing")
+            else:
+                for transition in state["transitions"]:
+                    if not isinstance(transition, dict):
+                        self.errors["errors"].append(f"{state_name} transition is not a dict")
                     else:
-                        self.errors["errors"].append(f"{state_name} transition is missing")
+                        if "code" in transition:
+                            if not isinstance(transition["code"], str):
+                                self.errors["errors"].append(
+                                    f"{state_name} transition code is not a string"
+                                )
+                        else:
+                            self.errors.append(f"{state_name} transition code is missing")
+
+                        if "goto" in transition:
+                            if transition["goto"] == None:
+                                self.errors["warnings"].append(f"{state_name} goto is set None")
+                            if transition["goto"] not in self.dsl_dict:
+                                self.errors["errors"].append(
+                                    f"{state_name} next transition task {transition['goto']} does not exist"
+                                )
+                        else:
+                            self.errors["errors"].append(f"{state_name} transition is missing")
+        if state["task_type"] == "operation":
+            if "goto" not in state:
+                self.errors["errors"].append(f"{state_name} goto is missing")
+            else:
+                if state["goto"] == None:
+                    self.errors["warnings"].append(f"{state_name} goto is set None")
+                if state["goto"] not in self.dsl_dict:
+                    self.errors["errors"].append(
+                        f"{state_name} next transition task {state['goto']} does not exist"
+                    )
+        if state["task_type"] == "print":
+            if "goto" not in state:
+                self.errors["errors"].append(f"{state_name} goto is missing")
+            else:
+                if state["goto"] == None:
+                    self.errors["warnings"].append(f"{state_name} goto is set None")
+                if state["goto"] not in self.dsl_dict:
+                    self.errors["errors"].append(
+                        f"{state_name} next transition task {state['goto']} does not exist"
+                    )
+        if state["task_type"] == "input":
+            if "goto" not in state:
+                self.errors["errors"].append(f"{state_name} goto is missing")
+            else:
+                if state["goto"] == None:
+                    self.errors["warnings"].append(f"{state_name} goto is set None")
+                if state["goto"] not in self.dsl_dict:
+                    self.errors["errors"].append(
+                        f"{state_name} next transition task {state['goto']} does not exist"
+                    )
+            if "error_goto" not in state:
+                self.errors["errors"].append(f"{state_name} error_goto is missing")
+            else:
+                if state["error_goto"] == None:
+                    self.errors["warnings"].append(f"{state_name} error_goto is set None")
+                if state["error_goto"] not in self.dsl_dict:
+                    self.errors["errors"].append(
+                        f"{state_name} next transition task {state['error_goto']} does not exist"
+                    )
 
     def transition_loop_checker(self, state_name):
         value = self.dsl_dict[state_name]
@@ -192,84 +256,59 @@ class Checker:
     ):
         self.variable_checker()
 
-        for key, value in self.dsl_dict.items():
-            self.transition_loop_checker(key)
-            if value["task_type"] == "print":
-                if "message" in value:
-                    if not isinstance(value["message"], str):
-                        self.errors["errors"].append(f"{key} message is not a string")
+        for state_name, state in self.dsl_dict.items():
+            self.transition_checker(state_name)
+            self.transition_loop_checker(state_name)
+            if state["task_type"] == "print":
+                if "message" in state:
+                    if not isinstance(state["message"], str):
+                        self.errors["errors"].append(f"{state_name} message is not a string")
                 else:
-                    self.errors.append(f"{key} message is missing")
+                    self.errors.append(f"{state_name} message is missing")
 
-                if "goto" in value:
-                    if isinstance(value["goto"], str):
-                        if value["goto"] not in self.dsl_dict:
-                            self.errors["errors"].append(
-                                f"{key} next transition task {value['goto']} does not exist"
-                            )
-                else:
-                    self.errors["errors"].append(f"{key} goto is missing")
+            if state["task_type"] == "input":
 
-            if value["task_type"] == "input":
+                if "write_variable" in state:
+                    if not isinstance(state["write_variable"], str):
+                        self.errors["errors"].append(f"{state_name} write_variable parameter is not string")
+                    if state["write_variable"] not in self.variables_dict:
+                        self.errors["errors"].append(
+                            f"{state_name} write_variable {state['write_variable']} does not exist in variables"
+                        )
+                if "options" in state:
+                    if not isinstance(state["options"], list):
+                        self.errors["errors"].append(f"{state_name} options is not a list")
 
-                has_transition = False
-                if "goto" in value:
-                    if isinstance(value["goto"], str):
-                        if value["goto"] not in self.dsl_dict:
-                            self.errors["errors"].append(
-                                f"{key} goto task {value['goto']} does not exist"
-                            )
-                else:
-                    self.errors["errors"].append(f"{key} goto is missing")
-
-                if "error_goto" in value:
-                    if isinstance(value["error_goto"], str):
-                        if value["error_goto"] not in self.dsl_dict:
-                            self.errors["errors"].append(
-                                f"{key} error_goto task {value['error_goto']} does not exist"
-                            )
-                else:
-                    self.errors["errors"].append(f"{key} error_goto is missing")
-
-                if "options" in value:
-                    if not isinstance(value["options"], list):
-                        self.errors["errors"].append(f"{key} options is not a list")
-
-            if value["task_type"] == "plugin":
-                if "plugin" in value:
-                    if not isinstance(value["plugin"], dict):
-                        self.errors["errors"].append(f"{key} plugin is not a dict")
+            if state["task_type"] == "plugin":
+                if "plugin" in state:
+                    if not isinstance(state["plugin"], dict):
+                        self.errors["errors"].append(f"{state_name} plugin is not a dict")
                     # how to check if the plugin exists
                     # how to check if the plugin has the correct input and output variables
                 else:
-                    self.errors["errors"].append(f"{key} plugin is missing")
+                    self.errors["errors"].append(f"{state_name} plugin is missing")
 
-                if "message" in value:
-                    if not isinstance(value["message"], str):
-                        self.errors["errors"].append(f"{key} message is not a string")
+                if "message" in state:
+                    if not isinstance(state["message"], str):
+                        self.errors["errors"].append(f"{state_name} message is not a string")
 
-                if "transitions" in value:
-                    self.transition_checker(key)
-                else:
-                    self.errors["errors"].append(f"{key} transitions is missing")
-
-            if value["task_type"] == "condition":
-                if "read_variables" in value:
-                    if not isinstance(value["read_variables"], list):
-                        self.errors.append(f"{key} read_variables is not a list")
+            if state["task_type"] == "condition":
+                if "read_variables" in state:
+                    if not isinstance(state["read_variables"], list):
+                        self.errors.append(f"{state_name} read_variables is not a list")
                     else:
-                        for read_variable in value["read_variables"]:
+                        for read_variable in state["read_variables"]:
                             if read_variable not in self.variables_dict:
                                 self.errors.append(
-                                    f"{key} read_variable {read_variable} does not exist in variables"
+                                    f"{state_name} read_variable {read_variable} does not exist in variables"
                                 )
                 else:
-                    self.errors.append(f"{key} read_variables is missing")
+                    self.errors.append(f"{state_name} read_variables is missing")
 
-                if "conditions" in value:
-                    self.transition_checker(key, "conditions")
+                if "conditions" in state:
+                    self.transition_checker(state_name, "conditions")
                 else:
-                    self.errors["errors"].append(f"{key} transitions is missing")
+                    self.errors["errors"].append(f"{state_name} transitions is missing")
 
         return self.errors
 
@@ -282,4 +321,4 @@ if __name__ == "__main__":
     config_var_names = [var["name"] for var in data["config_variables"]]
     checker = Checker(tasks, data["variables"], data["config_variables"])
     result = checker.checker()
-    print(result)
+    print(json.dumps(result, indent=4))
