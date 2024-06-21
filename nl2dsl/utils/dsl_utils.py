@@ -51,10 +51,10 @@ def update_flow(step, plugins={}, flow=[], debug=False):
                 dsl_list.insert(-1, llm_response)
             elif step_type == "edit":
                 edited_task = llm_response
-                if edited_task["task_id"] == "end":
+                if edited_task["name"] == "end":
                     cprint(f"Cannot edit end task.", "red")
                 
-                elif edited_task["task_id"] == "start":
+                elif edited_task["name"] == "start":
                     for i, task in enumerate(dsl_list):
                         if task["name"] == "start":
                             if edited_task.get("goto"):
