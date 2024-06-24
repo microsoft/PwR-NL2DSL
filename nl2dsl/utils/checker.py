@@ -200,37 +200,42 @@ class Checker:
                 stack.extend(graph[task_name])
 
     def undeclared_variables(self):
+        if self.config_variables:
+            config_var_names = [var["name"] for var in self.config_variables]
+        else:
+            config_var_names = []
+
         for task in self.dsl:
             if task['task_type'] == 'print':
                 if "read_variables" in task:
                     for var in task['read_variables']:
-                        if var not in self.defined_variables:
+                        if var not in self.defined_variables and var not in config_var_names:
                             self.errors["errors"].append(f"print task: {task['name']} contains undeclared variable {var}")
             
             if task['task_type'] == 'input':
                 write_var = task.get('write_variable')
-                if write_var not in self.defined_variables:
+                if write_var not in self.defined_variables and write_var not in config_var_names:
                     self.errors["errors"].append(f"input task: {task['name']} contains undeclared variable {write_var}")
             
             if task['task_type'] == 'plugin':
                 # Check read variables
                 read_vars = task.get('read_variables', [])
                 for i, var in enumerate(read_vars):
-                    if var not in self.defined_variables:
+                    if var not in self.defined_variables and var not in config_var_names:
                         self.errors["errors"].append(f"plugin task: {task['name']} contains undeclared variable {var} in input")
                 # Check write variables
                 write_vars = task.get('write_variables', [])
                 for i, var in enumerate(write_vars):
-                    if var not in self.defined_variables:
+                    if var not in self.defined_variables and var not in config_var_names:
                         self.errors["errors"].append(f"plugin task: {task['name']} contains undeclared variable {var} in output")
             if task['task_type'] == 'operation':
                 write_var = task.get('write_variable')
-                if write_var not in self.defined_variables:
+                if write_var not in self.defined_variables and var not in config_var_names:
                     self.errors["errors"].append(f"operation task: {task['name']} contains undeclared variable")
             
             if task['task_type'] == 'condition':
                 for i, var in enumerate(task['read_variables']):
-                    if var not in self.defined_variables:
+                    if var not in self.defined_variables and var not in config_var_names:
                         self.errors["errors"].append(f"condition task: {task['name']} contains undeclared variable")
         
     def variable_checker(self):
@@ -318,7 +323,7 @@ if __name__ == "__main__":
     with open("bandhu/gold.json") as f:
         data = json.load(f)
     tasks = data["dsl"]
-    config_var_names = [var["name"] for var in data["config_variables"]]
-    checker = Checker(tasks, data["variables"], data["config_variables"])
+    config_var_names = [var["name"] for var in data["config_vars"]]
+    checker = Checker(tasks, data["variables"], data["config_vars"])
     result = checker.checker()
     print(json.dumps(result, indent=4))
