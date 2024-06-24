@@ -2,7 +2,7 @@ import json
 from termcolor import cprint
 from typing import List, Dict, Callable
 
-from .utils.mini_llm import call_llm_for_json
+from .utils.mini_llm import call_llm_for_json, chat_completion_request
 from .utils.dsl_utils import (
     update_flow,
     update_global_variables,
