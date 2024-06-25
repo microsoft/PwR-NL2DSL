@@ -318,14 +318,3 @@ class Checker:
                     self.issues["errors"].append(f"{state_name} transitions is missing")
 
         return self.issues
-
-
-if __name__ == "__main__":
-
-    with open("bandhu/gold.json") as f:
-        data = json.load(f)
-    tasks = data["dsl"]
-    config_var_names = [var["name"] for var in data["config_vars"]]
-    checker = Checker(tasks, data["variables"], data["config_vars"])
-    result = checker.checker()
-    print(json.dumps(result, indent=4))
