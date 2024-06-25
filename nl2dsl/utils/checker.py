@@ -3,8 +3,6 @@ import json
 class Checker:
     def __init__(
         self,
-        dsl,
-        variables,
         json_data
     ):
         
@@ -15,11 +13,11 @@ class Checker:
         self.config_variables = json_data["config_vars"]
         
         self.dsl_dict = {}
-        for task in dsl:
+        for task in self.dsl:
             self.dsl_dict[task["name"]] = task
         
         self.variables_dict = {}
-        for variable in variables:
+        for variable in self.variables:
             self.variables_dict[variable["name"]] = variable
 
     def transition_checker(self, state_name, condition_key=None):
