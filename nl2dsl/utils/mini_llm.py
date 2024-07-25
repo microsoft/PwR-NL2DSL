@@ -15,8 +15,10 @@ if os.getenv("AZURE_OPENAI_API_KEY"):
 else:
     client = OpenAI()
 
-GPT_MODEL = "gpt-4-turbo"
+GPT_MODEL = os.getenv('MODEL_NAME')
 
+if GPT_MODEL is None:
+    raise EnvironmentError("MODEL_NAME environment variable is not set.")
 
 @retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(10))
 def mini_llm(utterance, model="gpt-4-turbo", temperature=0.3):
