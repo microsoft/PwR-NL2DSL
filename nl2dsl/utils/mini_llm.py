@@ -15,8 +15,10 @@ if os.getenv("AZURE_OPENAI_API_KEY"):
 else:
     client = OpenAI()
 
-GPT_MODEL = "gpt-4-turbo"
+SLOW_MODEL = os.getenv('SLOW_MODEL')
 
+if SLOW_MODEL is None:
+    raise EnvironmentError("SLOW_MODEL environment variable is not set.")
 
 @retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(10))
 def mini_llm(utterance, model="gpt-4-turbo", temperature=0.3):
@@ -33,7 +35,7 @@ def mini_llm(utterance, model="gpt-4-turbo", temperature=0.3):
 
 @retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(10))
 def chat_completion_request(
-    messages, tools=None, tool_choice=None, model=GPT_MODEL, response_format=None
+    messages, tools=None, tool_choice=None, model=SLOW_MODEL, response_format=None
 ):
     response = client.chat.completions.create(
         model=model,
