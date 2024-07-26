@@ -140,7 +140,7 @@ class NL2DSL:
         return self.dsl
 
     def validate_dsl(self):
-        checker = Checker(self.dsl["dsl"], self.dsl["variables"])
+        checker = Checker(self.dsl)
         errors = checker.checker()
         return errors
 
