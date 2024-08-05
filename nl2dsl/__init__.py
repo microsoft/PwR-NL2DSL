@@ -86,11 +86,11 @@ class NL2DSL:
 
     def _update_dsl_using_plan(self) -> Dict[str, List[Dict]]:
         flow = self.dsl["dsl"].copy()
-
+        total_steps = len(self.plan)
         for i, step in enumerate(self.plan):
 
             self.status_update_callback and self.status_update_callback(
-                event="step_update", data={"step":step, "step_number":(i+1), "flow":flow}
+                event="step_update", data={"step":step, "step_number":(i+1), "total_steps":total_steps, "flow":flow}
             )
 
             step_plugin = ""
