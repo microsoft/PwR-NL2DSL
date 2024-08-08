@@ -135,7 +135,7 @@ class NL2DSL:
         self.status_update_callback and self.status_update_callback(
             event="dsl_updated_successfully", data=new_dsl
         )
-
+        new_dsl = self.add_azure_keys(new_dsl)
         self.dsl = new_dsl
         return self.dsl
 
@@ -173,5 +173,17 @@ class NL2DSL:
                         flow[i]["transitions"][j]["goto"] = None
         return flow
 
-
+    def add_azure_keys(self, dsl):
+        AZURE_CREDENTIALS = [
+        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_API_VERSION",
+        "FAST_MODEL",
+        "SLOW_MODEL",
+        ]
+        for key in AZURE_CREDENTIALS:
+            if key not in dsl["config_vars"]:
+                dsl["config_vars"].append({"name": key, "value": ""})
+        return dsl
+    
 __all__ = ["NL2DSL"]
