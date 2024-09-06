@@ -181,8 +181,9 @@ class NL2DSL:
         "FAST_MODEL",
         "SLOW_MODEL",
         ]
+        existing_keys = set(config_var["name"] for config_var in dsl["config_vars"])
         for key in AZURE_CREDENTIALS:
-            if key not in dsl["config_vars"]:
+            if key not in existing_keys:
                 dsl["config_vars"].append({"name": key, "value": ""})
         return dsl
     
