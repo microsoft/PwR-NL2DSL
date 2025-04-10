@@ -6,6 +6,9 @@ import os
 
 if os.getenv("OPENAI_API_TYPE") == "custom":
     api_endpoint = os.getenv("OPENAI_API_ENDPOINT")
+    if not api_endpoint:
+        raise EnvironmentError("OPENAI_API_ENDPOINT environment variable is not set.")
+
     api_version = os.getenv("OPENAI_API_VERSION")
     if api_key := os.getenv("OPENAI_API_KEY", None):
         client = AzureOpenAI(
@@ -15,6 +18,8 @@ if os.getenv("OPENAI_API_TYPE") == "custom":
         )
     else:
         scope = os.getenv("AZURE_CREDENTIAL_SCOPE")
+        if not scope:
+            raise EnvironmentError("AZURE_CREDENTIAL_SCOPE environment variable is not set.")
         credential = get_bearer_token_provider(AzureCliCredential(), scope)
         client = AzureOpenAI(
             azure_endpoint=api_endpoint,
