@@ -1,36 +1,38 @@
-from calendar import c
-from sys import api_version
 from openai import AzureOpenAI, OpenAI
 from tenacity import retry, wait_random_exponential, stop_after_attempt
+from azure.identity import AzureCliCredential, get_bearer_token_provider
 import json
 import os
 
-if os.getenv("AZURE_OPENAI_API_KEY"):
-    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-    azure_key = os.getenv("AZURE_OPENAI_API_KEY")
-    api_version = os.getenv("AZURE_OPENAI_API_VERSION")
-    client = AzureOpenAI(
-        azure_endpoint=azure_endpoint, api_key=azure_key, api_version=api_version
-    )
+if os.getenv("OPENAI_API_TYPE") == "custom":
+    api_endpoint = os.getenv("OPENAI_API_ENDPOINT")
+    if not api_endpoint:
+        raise EnvironmentError("OPENAI_API_ENDPOINT environment variable is not set.")
+
+    api_version = os.getenv("OPENAI_API_VERSION")
+    if api_key := os.getenv("OPENAI_API_KEY", None):
+        client = AzureOpenAI(
+            azure_endpoint=api_endpoint,
+            api_key=api_key,
+            api_version=api_version,
+        )
+    else:
+        scope = os.getenv("AZURE_CREDENTIAL_SCOPE")
+        if not scope:
+            raise EnvironmentError("AZURE_CREDENTIAL_SCOPE environment variable is not set.")
+        credential = get_bearer_token_provider(AzureCliCredential(), scope)
+        client = AzureOpenAI(
+            azure_endpoint=api_endpoint,
+            azure_ad_token_provider=credential,
+            api_version=api_version,
+        )
 else:
     client = OpenAI()
 
-SLOW_MODEL = os.getenv('SLOW_MODEL')
+SLOW_MODEL = os.getenv("SLOW_MODEL")
 
 if SLOW_MODEL is None:
     raise EnvironmentError("SLOW_MODEL environment variable is not set.")
-
-@retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(10))
-def mini_llm(utterance, model="gpt-4-turbo", temperature=0.3):
-
-    client = AzureOpenAI()
-    messages = [{"role": "system", "content": utterance}]
-    completions = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-    )
-    return completions.choices[0].message.content
 
 
 @retry(wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(10))
