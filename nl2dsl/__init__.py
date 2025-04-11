@@ -175,11 +175,13 @@ class NL2DSL:
 
     def add_azure_keys(self, dsl):
         AZURE_CREDENTIALS = [
-        "AZURE_OPENAI_API_KEY",
-        "AZURE_OPENAI_API_ENDPOINT",
-        "AZURE_OPENAI_API_VERSION",
-        "FAST_MODEL",
-        "SLOW_MODEL",
+            "OPENAI_API_TYPE",
+            "OPENAI_API_KEY",
+            "OPENAI_API_ENDPOINT",
+            "OPENAI_API_VERSION",
+            "AZURE_CREDENTIAL_SCOPE",
+            "FAST_MODEL",
+            "SLOW_MODEL",
         ]
         existing_keys = set(config_var["name"] for config_var in dsl["config_vars"])
         for key in AZURE_CREDENTIALS:
